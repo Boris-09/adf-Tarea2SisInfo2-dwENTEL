@@ -1,5 +1,5 @@
 {
-	"name": "df_gold_dim_numero",
+	"name": "df_gold_dim_fecha",
 	"properties": {
 		"folder": {
 			"name": "Gold"
@@ -9,30 +9,30 @@
 			"sources": [
 				{
 					"dataset": {
+						"referenceName": "ds_sql_silver_llamadas",
+						"type": "DatasetReference"
+					},
+					"name": "fechaLlamadas"
+				},
+				{
+					"dataset": {
 						"referenceName": "ds_sql_silver_datos",
 						"type": "DatasetReference"
 					},
-					"name": "numeroDatos"
+					"name": "fechaInicio"
 				},
 				{
 					"dataset": {
-						"referenceName": "ds_sql_silver_llamadas",
+						"referenceName": "ds_sql_silver_datos",
 						"type": "DatasetReference"
 					},
-					"name": "numeroA"
-				},
-				{
-					"dataset": {
-						"referenceName": "ds_sql_silver_llamadas",
-						"type": "DatasetReference"
-					},
-					"name": "numeroB"
+					"name": "fechaFin"
 				}
 			],
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "ds_gold_dim_numero",
+						"referenceName": "ds_gold_dim_fecha",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
@@ -49,45 +49,48 @@
 					"name": "sort1"
 				},
 				{
+					"name": "filter1"
+				},
+				{
 					"name": "aggregate1"
 				}
 			],
 			"scriptLines": [
 				"source(output(",
-				"          numero as string",
+				"          fecha as timestamp",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     query: 'select DISTINCT numero as numero from silver.datos',",
-				"     format: 'query') ~> numeroDatos",
+				"     query: 'select DISTINCT fecha from silver.llamadas',",
+				"     format: 'query') ~> fechaLlamadas",
 				"source(output(",
-				"          numero as string",
+				"          fecha as timestamp",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     query: 'SELECT DISTINCT numero_a as numero from silver.llamadas',",
-				"     format: 'query') ~> numeroA",
+				"     query: 'SELECT DISTINCT fecha_inicio as fecha from silver.datos',",
+				"     format: 'query') ~> fechaInicio",
 				"source(output(",
-				"          numero as string",
+				"          fecha as timestamp",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     query: 'select distinct numero_b as numero from silver.llamadas',",
-				"     format: 'query') ~> numeroB",
-				"numeroDatos, numeroA union(byName: true)~> union1",
-				"union1, numeroB union(byName: true)~> union2",
-				"union2 sort(asc(numero, true)) ~> sort1",
-				"sort1 aggregate(groupBy(numero),",
-				"     each(match(name != 'numero'), $$ = first($$))) ~> aggregate1",
+				"     query: 'select distinct fecha_fin as fecha from silver.datos',",
+				"     format: 'query') ~> fechaFin",
+				"fechaLlamadas, fechaInicio union(byName: true)~> union1",
+				"union1, fechaFin union(byName: true)~> union2",
+				"union2 sort(asc(fecha, true)) ~> sort1",
+				"sort1 filter(!isNull(fecha)) ~> filter1",
+				"filter1 aggregate(groupBy(fecha),",
+				"     each(match(name != 'fecha' ), $$ = first($$))) ~> aggregate1",
 				"aggregate1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
-				"          id_numero as integer,",
-				"          numero as string,",
-				"          imei as string",
+				"          id_fecha as integer,",
+				"          fecha as timestamp",
 				"     ),",
 				"     deletable:false,",
 				"     insertable:true,",
@@ -98,7 +101,7 @@
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",
 				"     mapColumn(",
-				"          numero",
+				"          fecha",
 				"     )) ~> sink1"
 			]
 		}
