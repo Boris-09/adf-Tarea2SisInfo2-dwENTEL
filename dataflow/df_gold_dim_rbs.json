@@ -1,0 +1,71 @@
+{
+	"name": "df_gold_dim_rbs",
+	"properties": {
+		"folder": {
+			"name": "Gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_sql_silver_datos",
+						"type": "DatasetReference"
+					},
+					"name": "rbsDatos"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_sql_silver_llamadas",
+						"type": "DatasetReference"
+					},
+					"name": "rbsA"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_sql_silver_llamadas",
+						"type": "DatasetReference"
+					},
+					"name": "rbsB"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "union1"
+				},
+				{
+					"name": "union2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          rbs_utilizada as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT DISTINCT rbs_utilizada  FROM silver.datos',",
+				"     format: 'query') ~> rbsDatos",
+				"source(output(",
+				"          rbs as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT DISTINCT rbs_utilizada_a AS rbs FROM silver.llamadas',",
+				"     format: 'query') ~> rbsA",
+				"source(output(",
+				"          rbs as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT DISTINCT rbs_utilizada_b  AS rbs FROM silver.llamadas',",
+				"     format: 'query') ~> rbsB",
+				"rbsDatos, rbsA union(byName: true)~> union1",
+				"union1, rbsB union(byName: true)~> union2"
+			]
+		}
+	}
+}
